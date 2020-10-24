@@ -82,26 +82,18 @@ export default class Tab extends React.PureComponent {
         })
 
         if (isTabChild) {
-            return true;
+            return true
         } else {
 
             let activeTab = this.state.tabs[this.state.activeTabIndex];
             if (activeTab.type != 'Scene') {
                 return activeTab.ref.push(screenName, screenProps);
             } else {
-                return false;
+                return false
             }
 
-            // let result = this.state.tabs
-            //     .filter(elementInTab => elementInTab.type != 'Scene')
-            //     .some(elementInTab => {
-            //         return elementInTab.ref.push(screenName, screenProps);
-            //     })
-
-            // return result;
 
         }
-
     }
 
     pop = () => {
@@ -109,7 +101,7 @@ export default class Tab extends React.PureComponent {
         if (activeTab.type != 'Scene') {
             return activeTab.ref.pop();
         } else {
-            return false;
+            return false
         }
     }
 

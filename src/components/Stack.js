@@ -3,7 +3,7 @@ import { View, StyleSheet, Animated, Dimensions, Easing } from 'react-native'
 import classMapping from '../utils/classMapping'
 
 let outerIndex = 0;
-const TRANSITION_DURATION = 400;
+const TRANSITION_DURATION = 4000;
 
 export default class Stack extends React.PureComponent {
     constructor(props) {
@@ -16,6 +16,7 @@ export default class Stack extends React.PureComponent {
         }
 
         this.screenWidth = Dimensions.get('screen').width
+        this.removingList = []
     }
 
     getIndex = (name) => {
@@ -27,7 +28,7 @@ export default class Stack extends React.PureComponent {
             return ({
                 type: child.type.name,
                 props: child.props,
-                key: child.key,
+                elementKey: child.key,
             })
         })
 
@@ -49,6 +50,7 @@ export default class Stack extends React.PureComponent {
             transitionAnimation: disableAnimation ? new Animated.Value(0) : new Animated.Value(this.screenWidth)
         }
         const newIndex = this.getIndex(element.type);
+        element.key = newIndex;
         element.element = (
             <Animated.View key={newIndex} style={[styles.sceneContainer, { transform: [{ translateX: element.transitionAnimation }] }]}>
                 {
@@ -61,22 +63,23 @@ export default class Stack extends React.PureComponent {
                 }
             </Animated.View>
         )
-
         return element;
     }
 
     push = (screenName, screenProps) => {
-        let sameElements = Object.values(this.state.elementMap).filter(element => element.key == screenName);
+        let sameElements = Object.values(this.state.elementMap).filter(element => element.elementKey == screenName);
         if (sameElements.length > 0) {
             let newElement = this.createObjectElement(sameElements[0], screenProps, false);
+
             let newStack = this.state.stack.concat([newElement])
+
 
             this.setState({
                 stack: newStack
             }, () => {
                 this.startTransitionAnimations(newElement, true);
+                return true
             })
-            return true;
         } else {
             if (this.state.stack.length > 0) {
                 let lastElement = this.state.stack[this.state.stack.length - 1]
@@ -86,26 +89,31 @@ export default class Stack extends React.PureComponent {
                     return false
                 }
             } else {
-                return false;
+                return false
             }
         }
     }
 
     pop = () => {
-        if (this.state.stack.length > 1) {
-            let lastElement = this.state.stack[this.state.stack.length - 1];
+        let activeStack = this.state.stack.filter(element => !this.removingList.includes(element.key))
+
+        if (activeStack.length > 1) {
+            let lastElement = activeStack[activeStack.length - 1];
             if (lastElement.type == 'Scene' || lastElement.ref.pop()) {
-                let newStack = this.state.stack.filter((element, index) => index < this.state.stack.length - 1)
+                let newStack = activeStack.filter((element, index) => index < activeStack.length - 1)
+                this.removingList.push(lastElement.key)
                 this.startTransitionAnimations(lastElement, false, () => {
                     this.setState({
                         stack: newStack
                     }, () => {
+                        this.removingList = this.removingList.filter(key => key !== lastElement.key)
                         lastElement.element = null;
+                        return true
                     })
                 });
+
             }
         }
-
     }
 
     startTransitionAnimations = (element, isOpen = true, callback) => {

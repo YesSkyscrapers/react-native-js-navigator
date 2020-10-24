@@ -18,15 +18,14 @@ export default class Scene extends React.PureComponent {
     }
 
     push = () => {
-        return false;
+        return false
     }
 
     pop = () => {
-        return false;
+        return false
     }
 
     render() {
-        console.log(this.props)
         return (
             <View style={styles.sceneContainer}>
                 {

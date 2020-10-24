@@ -1,8 +1,8 @@
 import React from 'react'
 
 let Actions = {
-    push: () => {},
-    pop: () => {},
+    push: () => { },
+    pop: () => { },
 }
 
 const updateAction = (actionName, action) => {
@@ -12,4 +12,4 @@ const updateAction = (actionName, action) => {
 
 
 export default Actions;
-export {updateAction}
+export { updateAction }
