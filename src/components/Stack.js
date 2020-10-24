@@ -3,7 +3,7 @@ import { View, StyleSheet, Animated, Dimensions, Easing } from 'react-native'
 import classMapping from '../utils/classMapping'
 
 let outerIndex = 0;
-const TRANSITION_DURATION = 4000;
+const TRANSITION_DURATION = 400;
 
 export default class Stack extends React.PureComponent {
     constructor(props) {
@@ -66,16 +66,33 @@ export default class Stack extends React.PureComponent {
         return element;
     }
 
+    isSetStating = false;
+    setStatingStack = []
+    sequentialSetState = (getState = () => ({}), callback = () => { }) => {
+        if (!this.isSetStating) {
+            this.isSetStating = true;
+            this.setState(getState(), () => {
+                this.isSetStating = false;
+                if (this.setStatingStack.length > 0) {
+                    let nextFunc = this.setStatingStack[0];
+                    this.setStatingStack = this.setStatingStack.filter(f => f !== nextFunc);
+                    nextFunc();
+                }
+                callback();
+            })
+        } else {
+            this.setStatingStack.push(() => this.sequentialSetState(getState, callback));
+        }
+    }
+
     push = (screenName, screenProps) => {
         let sameElements = Object.values(this.state.elementMap).filter(element => element.elementKey == screenName);
         if (sameElements.length > 0) {
-            let newElement = this.createObjectElement(sameElements[0], screenProps, false);
-
-            let newStack = this.state.stack.concat([newElement])
-
-
-            this.setState({
-                stack: newStack
+            let newElement;
+            this.sequentialSetState(() => {
+                newElement = this.createObjectElement(sameElements[0], screenProps, false);
+                let newStack = this.state.stack.concat([newElement])
+                return ({ stack: newStack })
             }, () => {
                 this.startTransitionAnimations(newElement, true);
                 return true
@@ -117,6 +134,7 @@ export default class Stack extends React.PureComponent {
     }
 
     startTransitionAnimations = (element, isOpen = true, callback) => {
+        console.log(element.key, element.elementKey, isOpen)
         Animated.timing(element.transitionAnimation, {
             toValue: isOpen ? 0 : this.screenWidth,
             duration: TRANSITION_DURATION,

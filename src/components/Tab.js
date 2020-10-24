@@ -16,6 +16,7 @@ export default class Tab extends React.PureComponent {
         }
 
         this.screenWidth = Dimensions.get('screen').width;
+        this.activeTabIndex = 0;
     }
 
     getIndex = (name) => {
@@ -27,7 +28,7 @@ export default class Tab extends React.PureComponent {
             return ({
                 type: child.type.name,
                 props: child.props,
-                key: child.key,
+                elementKey: child.key,
             })
         })
 
@@ -55,15 +56,15 @@ export default class Tab extends React.PureComponent {
                 ref: _ref => element.ref = _ref
             })
         )
+        element.key = newIndex;
 
         return element;
     }
 
     push = (screenName, screenProps) => {
         let isTabChild = false;
-
         this.state.tabs.forEach((tab, index) => {
-            if (tab.key == screenName) {
+            if (tab.elementKey == screenName) {
                 isTabChild = true;
                 tab.props = {
                     ...tab.props,
@@ -72,6 +73,7 @@ export default class Tab extends React.PureComponent {
                 tab.element = React.cloneElement(tab.element, tab.props)
                 // tab.element = React.cloneElement(tab.element, tab.props,
                 //     React.Children.map(tab.element.props.children, (child => React.cloneElement(child, tab.props))))
+                this.activeTabIndex = index;
                 this.setState({
                     activeTabIndex: index,
                     tabs: this.state.tabs
@@ -85,7 +87,7 @@ export default class Tab extends React.PureComponent {
             return true
         } else {
 
-            let activeTab = this.state.tabs[this.state.activeTabIndex];
+            let activeTab = this.state.tabs[this.activeTabIndex];
             if (activeTab.type != 'Scene') {
                 return activeTab.ref.push(screenName, screenProps);
             } else {
@@ -97,7 +99,7 @@ export default class Tab extends React.PureComponent {
     }
 
     pop = () => {
-        let activeTab = this.state.tabs[this.state.activeTabIndex];
+        let activeTab = this.state.tabs[this.activeTabIndex];
         if (activeTab.type != 'Scene') {
             return activeTab.ref.pop();
         } else {
@@ -108,7 +110,7 @@ export default class Tab extends React.PureComponent {
     startTransitionAnimation = () => {
         Animated.sequence([
             Animated.timing(this.state.offset, {
-                toValue: this.state.activeTabIndex * this.screenWidth,
+                toValue: this.activeTabIndex * this.screenWidth,
                 duration: TRANSITION_DURATION,
                 useNativeDriver: true,
                 easing: Easing.out(Easing.poly(5))
@@ -137,8 +139,8 @@ export default class Tab extends React.PureComponent {
                     this.props.TabComponent ? (
                         React.cloneElement(this.props.TabComponent, {
                             activeIndex: this.state.activeTabIndex,
-                            activeTabKeyName: (this.state.tabs[this.state.activeTabIndex] || {}).key,
-                            tabsKeyNames: this.state.tabs.map(tab => tab.key)
+                            activeTabKeyName: (this.state.tabs[this.state.activeTabIndex] || {}).elementKey,
+                            tabsKeyNames: this.state.tabs.map(tab => tab.elementKey)
                         })
                     ) : null
                 }
