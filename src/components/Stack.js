@@ -1,8 +1,9 @@
 import React from 'react'
-import { View, StyleSheet, Animated, Dimensions } from 'react-native'
+import { View, StyleSheet, Animated, Dimensions, Easing } from 'react-native'
 import classMapping from '../utils/classMapping'
 
 let outerIndex = 0;
+const TRANSITION_DURATION = 400;
 
 export default class Stack extends React.PureComponent {
     constructor(props) {
@@ -67,10 +68,13 @@ export default class Stack extends React.PureComponent {
     push = (screenName, screenProps) => {
         let sameElements = Object.values(this.state.elementMap).filter(element => element.key == screenName);
         if (sameElements.length > 0) {
-            let newStack = this.state.stack.concat([this.createObjectElement(sameElements[0], screenProps, false)])
+            let newElement = this.createObjectElement(sameElements[0], screenProps, false);
+            let newStack = this.state.stack.concat([newElement])
 
             this.setState({
                 stack: newStack
+            }, () => {
+                this.startTransitionAnimations(newElement, true);
             })
             return true;
         } else {
@@ -92,16 +96,26 @@ export default class Stack extends React.PureComponent {
             let lastElement = this.state.stack[this.state.stack.length - 1];
             if (lastElement.type == 'Scene' || lastElement.ref.pop()) {
                 let newStack = this.state.stack.filter((element, index) => index < this.state.stack.length - 1)
-                this.setState({
-                    stack: newStack
-                }, () => {
-                    lastElement.element = null;
-                })
+                this.startTransitionAnimations(lastElement, false, () => {
+                    this.setState({
+                        stack: newStack
+                    }, () => {
+                        lastElement.element = null;
+                    })
+                });
             }
         }
 
     }
 
+    startTransitionAnimations = (element, isOpen = true, callback) => {
+        Animated.timing(element.transitionAnimation, {
+            toValue: isOpen ? 0 : this.screenWidth,
+            duration: TRANSITION_DURATION,
+            useNativeDriver: true,
+            easing: isOpen ? Easing.out(Easing.quad) : Easing.in(Easing.quad)
+        }).start(callback)
+    }
 
     render() {
         return (
@@ -117,9 +131,11 @@ export default class Stack extends React.PureComponent {
 const styles = StyleSheet.create({
     sceneContainer: {
         position: 'absolute',
-        left: 0,
+        left: -1,
         right: 0,
         top: 0,
         bottom: 0,
+        borderLeftWidth: 1,
+        borderLeftColor: 'grey'
     }
 })
