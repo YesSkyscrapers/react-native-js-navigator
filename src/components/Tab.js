@@ -1,8 +1,9 @@
 import React from 'react'
-import { View, StyleSheet, Dimensions } from 'react-native'
+import { View, StyleSheet, Dimensions, Animated, Easing } from 'react-native'
 import classMapping from '../utils/classMapping'
 
 let outerIndex = 0;
+let TRANSITION_DURATION = 400
 
 export default class Tab extends React.PureComponent {
     constructor(props) {
@@ -10,7 +11,8 @@ export default class Tab extends React.PureComponent {
 
         this.state = {
             tabs: [],
-            activeTabIndex: 0
+            activeTabIndex: 0,
+            offset: new Animated.Value(0)
         }
 
         this.screenWidth = Dimensions.get('screen').width;
@@ -21,7 +23,6 @@ export default class Tab extends React.PureComponent {
     }
 
     componentDidMount() {
-
         const newTabs = React.Children.map(this.props.children, child => {
             return ({
                 type: child.type.name,
@@ -47,16 +48,12 @@ export default class Tab extends React.PureComponent {
         }
         const newIndex = this.getIndex(element.type);
         element.element = (
-            <View key={newIndex} style={styles.sceneContainer}>
-                {
-                    React.createElement(classMapping.getType(element.type), {
-                        ...element.props,
-                        ..._props,
-                        key: newIndex,
-                        ref: _ref => element.ref = _ref
-                    })
-                }
-            </View>
+            React.createElement(classMapping.getType(element.type), {
+                ...element.props,
+                ..._props,
+                key: newIndex,
+                ref: _ref => element.ref = _ref
+            })
         )
 
         return element;
@@ -72,12 +69,14 @@ export default class Tab extends React.PureComponent {
                     ...tab.props,
                     ...screenProps
                 }
-                tab.element = React.cloneElement(tab.element, tab.props, React.cloneElement(tab.element.props.children, tab.props))
+                tab.element = React.cloneElement(tab.element, tab.props)
                 // tab.element = React.cloneElement(tab.element, tab.props,
                 //     React.Children.map(tab.element.props.children, (child => React.cloneElement(child, tab.props))))
                 this.setState({
                     activeTabIndex: index,
                     tabs: this.state.tabs
+                }, () => {
+                    this.startTransitionAnimation();
                 })
             }
         })
@@ -114,25 +113,15 @@ export default class Tab extends React.PureComponent {
         }
     }
 
-    getOffsetStyle = (index) => {
-        if (index == this.state.activeTabIndex) {
-            return styles.sceneContainer
-        } else if (index < this.state.activeTabIndex) {
-            return {
-                ...styles.sceneContainer,
-                right: this.screenWidth
-            }
-        } else if (index > this.state.activeTabIndex) {
-            return {
-                ...styles.sceneContainer,
-                left: this.screenWidth
-            }
-        } else {
-            return {
-                ...styles.sceneContainer,
-                top: 2000
-            }
-        }
+    startTransitionAnimation = () => {
+        Animated.sequence([
+            Animated.timing(this.state.offset, {
+                toValue: this.state.activeTabIndex * this.screenWidth,
+                duration: TRANSITION_DURATION,
+                useNativeDriver: true,
+                easing: Easing.out(Easing.poly(5))
+            })
+        ]).start();
     }
 
 
@@ -143,9 +132,11 @@ export default class Tab extends React.PureComponent {
                     {
                         this.state.tabs.map((elementObject, index) => {
                             return (
-                                <View key={elementObject.key} style={this.getOffsetStyle(index)}>
+                                <Animated.View key={elementObject.key} style={[styles.sceneContainer, {
+                                    transform: [{ translateX: Animated.add(Animated.multiply(this.state.offset, new Animated.Value(-1)), new Animated.Value(this.screenWidth * index)) }]
+                                }]}>
                                     {elementObject.element}
-                                </View>
+                                </Animated.View>
                             )
                         })
                     }
@@ -154,7 +145,8 @@ export default class Tab extends React.PureComponent {
                     this.props.TabComponent ? (
                         React.cloneElement(this.props.TabComponent, {
                             activeIndex: this.state.activeTabIndex,
-                            activeTabKeyName: (this.state.tabs[this.state.activeTabIndex] || {}).key
+                            activeTabKeyName: (this.state.tabs[this.state.activeTabIndex] || {}).key,
+                            tabsKeyNames: this.state.tabs.map(tab => tab.key)
                         })
                     ) : null
                 }
