@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, StyleSheet } from 'react-native'
+import { View, StyleSheet, Animated, Dimensions } from 'react-native'
 import classMapping from '../utils/classMapping'
 
 let outerIndex = 0;
@@ -8,10 +8,13 @@ export default class Stack extends React.PureComponent {
     constructor(props) {
         super(props);
 
+
         this.state = {
             stack: [],
-            elementMap: {}
+            elementMap: {},
         }
+
+        this.screenWidth = Dimensions.get('screen').width
     }
 
     getIndex = (name) => {
@@ -39,13 +42,14 @@ export default class Stack extends React.PureComponent {
         })
     }
 
-    createObjectElement = (_element, _props = {}) => {
+    createObjectElement = (_element, _props = {}, disableAnimation = true) => {
         let element = {
-            ..._element
+            ..._element,
+            transitionAnimation: disableAnimation ? new Animated.Value(0) : new Animated.Value(this.screenWidth)
         }
         const newIndex = this.getIndex(element.type);
         element.element = (
-            <View key={newIndex} style={styles.sceneContainer}>
+            <Animated.View key={newIndex} style={[styles.sceneContainer, { transform: [{ translateX: element.transitionAnimation }] }]}>
                 {
                     React.createElement(classMapping.getType(element.type), {
                         ...element.props,
@@ -54,7 +58,7 @@ export default class Stack extends React.PureComponent {
                         ref: _ref => element.ref = _ref
                     })
                 }
-            </View>
+            </Animated.View>
         )
 
         return element;
@@ -63,25 +67,37 @@ export default class Stack extends React.PureComponent {
     push = (screenName, screenProps) => {
         let sameElements = Object.values(this.state.elementMap).filter(element => element.key == screenName);
         if (sameElements.length > 0) {
-            let newStack = this.state.stack.concat([this.createObjectElement(sameElements[0], screenProps)])
+            let newStack = this.state.stack.concat([this.createObjectElement(sameElements[0], screenProps, false)])
 
             this.setState({
                 stack: newStack
             })
+            return true;
         } else {
-
+            if (this.state.stack.length > 0) {
+                let lastElement = this.state.stack[this.state.stack.length - 1]
+                if (lastElement.type != 'Scene') {
+                    return lastElement.ref.push(screenProps, screenProps)
+                } else {
+                    return false
+                }
+            } else {
+                return false;
+            }
         }
     }
 
     pop = () => {
         if (this.state.stack.length > 1) {
             let lastElement = this.state.stack[this.state.stack.length - 1];
-            let newStack = this.state.stack.filter((element, index) => index < this.state.stack.length - 1)
-            this.setState({
-                stack: newStack
-            }, () => {
-                lastElement.element = null;
-            })
+            if (lastElement.type == 'Scene' || lastElement.ref.pop()) {
+                let newStack = this.state.stack.filter((element, index) => index < this.state.stack.length - 1)
+                this.setState({
+                    stack: newStack
+                }, () => {
+                    lastElement.element = null;
+                })
+            }
         }
 
     }
