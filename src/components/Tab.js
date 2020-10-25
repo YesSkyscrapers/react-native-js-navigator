@@ -140,7 +140,15 @@ export default class Tab extends React.PureComponent {
                         React.cloneElement(this.props.TabComponent, {
                             activeIndex: this.state.activeTabIndex,
                             activeTabKeyName: (this.state.tabs[this.state.activeTabIndex] || {}).elementKey,
-                            tabsKeyNames: this.state.tabs.map(tab => tab.elementKey)
+                            tabs: this.state.tabs.map(tab => ({
+                                ...tab,
+                                ...tab.props,
+                                props: null,
+                                element: null,
+                                key: null,
+                                component: null,
+                                children: null
+                            }))
                         })
                     ) : null
                 }

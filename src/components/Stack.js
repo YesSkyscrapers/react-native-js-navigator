@@ -134,7 +134,6 @@ export default class Stack extends React.PureComponent {
     }
 
     startTransitionAnimations = (element, isOpen = true, callback) => {
-        console.log(element.key, element.elementKey, isOpen)
         Animated.timing(element.transitionAnimation, {
             toValue: isOpen ? 0 : this.screenWidth,
             duration: TRANSITION_DURATION,
