@@ -7,9 +7,9 @@ import Stack from '../components/Stack'
 
 const getType = (name) => {
     const mapping = {
-        "Scene": Scene,
-        "Tab": Tab,
-        "Stack": Stack,
+        [Scene.name]: Scene,
+        [Tab.name]: Tab,
+        [Stack.name]: Stack,
     }
     const result = mapping[name]
 
