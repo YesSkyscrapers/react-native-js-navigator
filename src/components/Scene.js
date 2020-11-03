@@ -43,6 +43,7 @@ const styles = StyleSheet.create({
         right: 0,
         top: 0,
         bottom: 0,
-        backgroundColor: 'white'
+        backgroundColor: 'white',
+        elevation: 1
     }
 })
