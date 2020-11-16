@@ -61,7 +61,12 @@ export default class Tab extends React.PureComponent {
         return element;
     }
 
-    push = (screenName, screenProps) => {
+    push = (screenName,
+        screenProps,
+        navigatorParams = {
+            withoutAnimation: false
+        }) => {
+
         let isTabChild = false;
         this.state.tabs.forEach((tab, index) => {
             if (tab.elementKey == screenName) {
@@ -78,7 +83,7 @@ export default class Tab extends React.PureComponent {
                     activeTabIndex: index,
                     tabs: this.state.tabs
                 }, () => {
-                    this.startTransitionAnimation();
+                    this.startTransitionAnimation(navigatorParams.withoutAnimation);
                 })
             }
         })
@@ -89,7 +94,7 @@ export default class Tab extends React.PureComponent {
 
             let activeTab = this.state.tabs[this.activeTabIndex];
             if (activeTab.type != 'Scene') {
-                return activeTab.ref.push(screenName, screenProps);
+                return activeTab.ref.push(screenName, screenProps, navigatorParams);
             } else {
                 return false
             }
@@ -98,20 +103,22 @@ export default class Tab extends React.PureComponent {
         }
     }
 
-    pop = () => {
+    pop = (navigatorParams = {
+        withoutAnimation: false
+    }) => {
         let activeTab = this.state.tabs[this.activeTabIndex];
         if (activeTab.type != 'Scene') {
-            return activeTab.ref.pop();
+            return activeTab.ref.pop(navigatorParams);
         } else {
             return false
         }
     }
 
-    startTransitionAnimation = () => {
+    startTransitionAnimation = (withoutAnimation = false) => {
         Animated.sequence([
             Animated.timing(this.state.offset, {
-                toValue: this.activeTabIndex * this.screenWidth,
-                duration: TRANSITION_DURATION,
+                toValue: (this.activeTabIndex * this.screenWidth) + this.activeTabIndex,
+                duration: withoutAnimation ? 2 : TRANSITION_DURATION,
                 useNativeDriver: true,
                 easing: Easing.out(Easing.poly(5))
             })
@@ -127,7 +134,7 @@ export default class Tab extends React.PureComponent {
                         this.state.tabs.map((elementObject, index) => {
                             return (
                                 <Animated.View key={elementObject.key} style={[styles.sceneContainer, {
-                                    transform: [{ translateX: Animated.add(Animated.multiply(this.state.offset, new Animated.Value(-1)), new Animated.Value(this.screenWidth * index)) }]
+                                    transform: [{ translateX: Animated.add(Animated.multiply(this.state.offset, new Animated.Value(-1)), new Animated.Value((this.screenWidth * index) + index)) }]
                                 }]}>
                                     {elementObject.element}
                                 </Animated.View>

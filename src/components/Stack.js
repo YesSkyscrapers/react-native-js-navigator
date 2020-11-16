@@ -61,6 +61,7 @@ export default class Stack extends React.PureComponent {
                         ref: _ref => element.ref = _ref
                     })
                 }
+
             </Animated.View>
         )
         return element;
@@ -85,23 +86,27 @@ export default class Stack extends React.PureComponent {
         }
     }
 
-    push = (screenName, screenProps) => {
+    push = (screenName,
+        screenProps,
+        navigatorParams = {
+            withoutAnimation: false
+        }) => {
         let sameElements = Object.values(this.state.elementMap).filter(element => element.elementKey == screenName);
         if (sameElements.length > 0) {
             let newElement;
             this.sequentialSetState(() => {
-                newElement = this.createObjectElement(sameElements[0], screenProps, false);
+                newElement = this.createObjectElement(sameElements[0], screenProps, navigatorParams.withoutAnimation);
                 let newStack = this.state.stack.concat([newElement])
                 return ({ stack: newStack })
             }, () => {
-                this.startTransitionAnimations(newElement, true);
+                this.startTransitionAnimations(newElement, true, undefined, navigatorParams.withoutAnimation);
                 return true
             })
         } else {
             if (this.state.stack.length > 0) {
                 let lastElement = this.state.stack[this.state.stack.length - 1]
                 if (lastElement.type != 'Scene') {
-                    return lastElement.ref.push(screenProps, screenProps)
+                    return lastElement.ref.push(screenName, screenProps, navigatorParams)
                 } else {
                     return false
                 }
@@ -111,12 +116,14 @@ export default class Stack extends React.PureComponent {
         }
     }
 
-    pop = () => {
+    pop = (navigatorParams = {
+        withoutAnimation: false
+    }) => {
         let activeStack = this.state.stack.filter(element => !this.removingList.includes(element.key))
 
         if (activeStack.length > 1) {
             let lastElement = activeStack[activeStack.length - 1];
-            if (lastElement.type == 'Scene' || lastElement.ref.pop()) {
+            if (lastElement.type == 'Scene' || lastElement.ref.pop(navigatorParams)) {
                 let newStack = activeStack.filter((element, index) => index < activeStack.length - 1)
                 this.removingList.push(lastElement.key)
                 this.startTransitionAnimations(lastElement, false, () => {
@@ -127,16 +134,16 @@ export default class Stack extends React.PureComponent {
                         lastElement.element = null;
                         return true
                     })
-                });
+                }, navigatorParams.withoutAnimation);
 
             }
         }
     }
 
-    startTransitionAnimations = (element, isOpen = true, callback) => {
+    startTransitionAnimations = (element, isOpen = true, callback, withoutAnimation = false) => {
         Animated.timing(element.transitionAnimation, {
-            toValue: isOpen ? 0 : this.screenWidth,
-            duration: TRANSITION_DURATION,
+            toValue: isOpen ? 0 : (this.screenWidth),
+            duration: withoutAnimation ? 0 : TRANSITION_DURATION,
             useNativeDriver: true,
             easing: isOpen ? Easing.out(Easing.quad) : Easing.in(Easing.quad)
         }).start(callback)
@@ -161,6 +168,6 @@ const styles = StyleSheet.create({
         top: 0,
         bottom: 0,
         borderLeftWidth: 1,
-        borderLeftColor: 'grey'
+        borderLeftColor: 'grey',
     }
 })

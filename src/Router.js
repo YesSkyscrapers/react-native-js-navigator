@@ -2,6 +2,21 @@ import React from 'react'
 import { View, StyleSheet } from 'react-native'
 import { updateAction } from './Actions'
 
+const historyChangeListeners = []
+
+export const onAddHistoryChangeListener = func => {
+    historyChangeListeners.push(func)
+}
+
+const onHistoryChange = (prevScreenName, nextScreenName) => {
+    historyChangeListeners.forEach(listener => {
+        listener({
+            prevScreenName,
+            nextScreenName
+        })
+    })
+}
+
 export default class Router extends React.Component {
     constructor(props) {
         super(props);
@@ -11,6 +26,7 @@ export default class Router extends React.Component {
         }
 
         this.rootRef = null;
+        this.history = ['root']
     }
 
     componentDidMount() {
@@ -23,15 +39,28 @@ export default class Router extends React.Component {
         updateAction("pop", this.pop)
     }
 
-    push = (screenName, screenProps) => {
+    callOnHistoryChange = (prev, next) => {
+        if (this.props.onHistoryChange) {
+            this.props.onHistoryChange(prev, next)
+        }
+        onHistoryChange(prev, next)
+    }
+
+    push = (screenName, screenProps, naviationParams) => {
+        this.callOnHistoryChange(this.history[this.history.length - 1], screenName)
+        this.history.push(screenName)
         if (this.rootRef && this.rootRef.push) {
-            this.rootRef.push(screenName, screenProps)
+            this.rootRef.push(screenName, screenProps, naviationParams)
         }
     }
 
-    pop = () => {
+    pop = (naviationParams) => {
+        if (this.history.length > 1) {
+            this.callOnHistoryChange(this.history[this.history.length - 1], this.history[this.history.length - 2])
+            this.history = this.history.slice(0, -1)
+        }
         if (this.rootRef && this.rootRef.pop) {
-            this.rootRef.pop()
+            this.rootRef.pop(naviationParams)
         }
     }
 
